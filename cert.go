@@ -54,6 +54,8 @@ func (m *mkcert) makeCert(hosts []string) {
 	tpl := &x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
+			Country:            []string{"US"},
+			Province:           []string{"New York"},
 			Organization:       []string{"mkcert development certificate"},
 			OrganizationalUnit: []string{userAndHostname},
 		},
@@ -199,6 +201,9 @@ func (m *mkcert) newCA() {
 	tpl := &x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
+			// This field MUST contain the two-letter ISO 3166-1 country code for the country in which the CA’s
+                        // place of business is located.
+			Country:            []string{"US"},
 			Organization:       []string{"mkcert development CA"},
 			OrganizationalUnit: []string{userAndHostname},
 
@@ -212,11 +217,17 @@ func (m *mkcert) newCA() {
 		NotAfter:  time.Now().AddDate(10, 0, 0),
 		NotBefore: time.Now(),
 
-		KeyUsage: x509.KeyUsageCertSign,
+		// This extension MUST be present and MUST be marked critical. Bit positions for keyCertSign and cRLSign
+                // MUST be set. If the Root CA Private Key is used for signing OCSP responses, then the digitalSignature bit
+                // MUST be set.
+		KeyUsage: x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageDigitalSignature,
 
+		// This extension MUST appear as a critical extension.
 		BasicConstraintsValid: true,
+                // The cA field MUST be set true. 
 		IsCA:                  true,
-		MaxPathLenZero:        true,
+                // PathLen SHOULD NOT be present
+		// MaxPathLenZero:        true,
 	}
 
 	cert, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &pub, priv)
